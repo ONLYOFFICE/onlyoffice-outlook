@@ -11,7 +11,7 @@ const rootElement: HTMLElement | null = document.getElementById("container");
 const root = rootElement ? createRoot(rootElement) : undefined;
 
 Office.onReady(() => {
-  const initialPath = window.location.hash.replace("#", "") || "/main";
+  const initialPath = window.location.hash.replace("#", "/") || "/main";
 
   root?.render(
     <FluentProvider theme={webLightTheme}>

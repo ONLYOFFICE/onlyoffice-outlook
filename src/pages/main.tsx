@@ -10,7 +10,7 @@ import {
 } from "@fluentui/react-icons";
 import { FileUtils } from "../utils/fileUtils";
 import { DocumentServerClient } from "../client/DocumentServerClient";
-import { APP_SETTINGS_KEY, DOCUMENT_SERVER_URL_SETTING } from "../constants";
+import { APP_SETTINGS_KEY, DOCUMENT_SERVER_JWT_SECRET_SETTING, DOCUMENT_SERVER_URL_SETTING } from "../constants";
 
 /* global Office, window, fetch */
 
@@ -34,7 +34,7 @@ interface FileKind {
 }
 
 function getFileKind(fileName: string, fu: FileUtils): FileKind {
-  const ext = fu.getFileExtension(fileName);
+  const ext = fu.getExtension(fileName);
   if (["xls", "xlsx", "csv"].includes(ext)) {
     return { label: "Spreadsheet", color: "#107c41", Icon: TableRegular };
   }
@@ -290,9 +290,10 @@ const MainPage: React.FC = () => {
   const [fileCount, setFileCount] = React.useState("Loading files...");
   const [showCreate, setShowCreate] = React.useState(false);
 
+  const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY);
+
   React.useEffect(() => {
-    const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY);
-    const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "http://192.168.56.1" : "http://192.168.56.1";
+    const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "https://onlinedocs.docs.onlyoffice.com" : "https://onlinedocs.docs.onlyoffice.com";
     if (documentServerUrl) {
       const client = new DocumentServerClient(documentServerUrl);
       client.getFormats().then((formats) => {
@@ -339,10 +340,8 @@ const MainPage: React.FC = () => {
     window.location.href = "settings.html";
   }
 
-  function openAttachmentInEditor(attachment: Office.AttachmentDetails) {
-    const fileName = attachment.name || "Unnamed attachment";
-    const fileType = fileUtils.current.getFileExtension(fileName);
-    const editorUrl = `${window.location.origin}/editor.html`;
+  function openEditor(attachment: Office.AttachmentDetails) {
+    const editorUrl = `${window.location.origin}/index.html#editor`;
 
     Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
       if (result.status !== Office.AsyncResultStatus.Succeeded) {
@@ -358,7 +357,7 @@ const MainPage: React.FC = () => {
         (arg: any) => {
           const message = JSON.parse(arg.message);
 
-          if (message.type === "editor-ready") {
+          if (message.type === "request-config") {
             (Office.context.mailbox.item as Office.MessageRead).getAttachmentContentAsync(
               attachment.id,
               (contentResult) => {
@@ -367,21 +366,28 @@ const MainPage: React.FC = () => {
                   dialog.close();
                   return;
                 }
+
+                const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "https://onlinedocs.docs.onlyoffice.com" : "https://onlinedocs.docs.onlyoffice.com";
+                const documentServerJwtSecret = appSettings ? appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] || "" : "";
+
                 dialog.messageChild(
                   JSON.stringify({
-                    type: "open-document",
-                    fileName,
-                    fileType,
-                    content: contentResult.value.content,
+                    type: "response-config",
+                    data: {
+                      documentServerUrl,
+                      config: fileUtils.current.createEditorConfig(
+                        attachment.id,
+                        attachment.name,
+                        "_data_",
+                        "view",
+                        documentServerJwtSecret
+                      ),
+                      content: contentResult.value.content
+                    },
                   })
                 );
               }
             );
-          } else if (message.type === "editor-error") {
-            console.error(`Editor error: ${message.message}`);
-            dialog.close();
-          } else if (message.type === "close-editor-dialog") {
-            dialog.close();
           }
         }
       );
@@ -521,7 +527,7 @@ const MainPage: React.FC = () => {
                 <Button
                   appearance="primary"
                   size="small"
-                  onClick={() => openAttachmentInEditor(att)}
+                  onClick={() => openEditor(att)}
                 >
                   View
                 </Button>
