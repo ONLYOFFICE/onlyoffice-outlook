@@ -8,7 +8,9 @@ import {
   DocumentPdfRegular,
   AttachRegular,
 } from "@fluentui/react-icons";
-import { getFileExtension } from "../utils/fileUtils";
+import { FileUtils } from "../utils/fileUtils";
+import { DocumentServerClient } from "../client/DocumentServerClient";
+import { APP_SETTINGS_KEY, DOCUMENT_SERVER_URL_SETTING } from "../constants";
 
 /* global Office, window, fetch */
 
@@ -31,8 +33,8 @@ interface FileKind {
   Icon: React.ComponentType;
 }
 
-function getFileKind(fileName: string): FileKind {
-  const ext = getFileExtension(fileName);
+function getFileKind(fileName: string, fu: FileUtils): FileKind {
+  const ext = fu.getFileExtension(fileName);
   if (["xls", "xlsx", "csv"].includes(ext)) {
     return { label: "Spreadsheet", color: "#107c41", Icon: TableRegular };
   }
@@ -280,6 +282,7 @@ const useStyles = makeStyles({
 
 const MainPage: React.FC = () => {
   const styles = useStyles();
+  const fileUtils = React.useRef(new FileUtils([]));
   const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[]>([]);
   const [subject, setSubject] = React.useState("Loading message...");
   const [from, setFrom] = React.useState("Unknown sender");
@@ -288,6 +291,15 @@ const MainPage: React.FC = () => {
   const [showCreate, setShowCreate] = React.useState(false);
 
   React.useEffect(() => {
+    const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY);
+    const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "http://192.168.56.1" : "http://192.168.56.1";
+    if (documentServerUrl) {
+      const client = new DocumentServerClient(documentServerUrl);
+      client.getFormats().then((formats) => {
+        fileUtils.current = new FileUtils(formats);
+      }).catch((err: Error) => console.error("Failed to load formats:", err));
+    }
+
     const item = Office.context?.mailbox?.item;
     if (!item) {
       setFileCount("No mailbox context");
@@ -329,7 +341,7 @@ const MainPage: React.FC = () => {
 
   function openAttachmentInEditor(attachment: Office.AttachmentDetails) {
     const fileName = attachment.name || "Unnamed attachment";
-    const fileType = getFileExtension(fileName);
+    const fileType = fileUtils.current.getFileExtension(fileName);
     const editorUrl = `${window.location.origin}/editor.html`;
 
     Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
@@ -489,7 +501,7 @@ const MainPage: React.FC = () => {
           <p className={styles.fileEmpty}>No attachments in this message.</p>
         ) : (
           attachments.map((att) => {
-            const kind = getFileKind(att.name || "");
+            const kind = getFileKind(att.name || "", fileUtils.current);
             const fileName = att.name || "Unnamed attachment";
             return (
               <article key={att.id} className={styles.fileItem}>
