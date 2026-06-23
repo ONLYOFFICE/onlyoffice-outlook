@@ -21,6 +21,10 @@
     "pretty": true,
     "typeRoots": [
       "node_modules/@types"
+    ],
+    "types": [
+      "office-js",
+      "office-runtime"
     ]
   },
   "exclude": [
