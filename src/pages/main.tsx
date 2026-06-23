@@ -293,13 +293,9 @@ const MainPage: React.FC = () => {
   const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY);
 
   React.useEffect(() => {
-    const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "https://onlinedocs.docs.onlyoffice.com" : "https://onlinedocs.docs.onlyoffice.com";
-    if (documentServerUrl) {
-      const client = new DocumentServerClient(documentServerUrl);
-      client.getFormats().then((formats) => {
-        fileUtils.current = new FileUtils(formats);
-      }).catch((err: Error) => console.error("Failed to load formats:", err));
-    }
+    new DocumentServerClient().getFormats().then((formats) => {
+      fileUtils.current = new FileUtils(formats);
+    });
 
     const item = Office.context?.mailbox?.item;
     if (!item) {
