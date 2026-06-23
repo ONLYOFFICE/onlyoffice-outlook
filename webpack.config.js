@@ -21,7 +21,7 @@ module.exports = async (env, options) => {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       react: ["react", "react-dom"],
       taskpane: {
-        import: ["./src/taskpane/index.tsx", "./src/taskpane/taskpane.html"],
+        import: ["./src/index.tsx", "./src/index.html"],
         dependOn: "react",
       },
       commands: "./src/commands/commands.ts",
@@ -63,7 +63,7 @@ module.exports = async (env, options) => {
     plugins: [
       new HtmlWebpackPlugin({
         filename: "taskpane.html",
-        template: "./src/taskpane/taskpane.html",
+        template: "./src/index.html",
         chunks: ["polyfill", "taskpane", "react"],
       }),
       new CopyWebpackPlugin({
