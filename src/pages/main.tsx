@@ -274,11 +274,6 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     fontSize: "12px",
   },
-  status: {
-    margin: "0",
-    color: tokens.colorNeutralForeground3,
-    fontSize: "13px",
-  },
 });
 
 // --- Main component ---
@@ -290,14 +285,12 @@ const MainPage: React.FC = () => {
   const [from, setFrom] = React.useState("Unknown sender");
   const [date, setDate] = React.useState("");
   const [fileCount, setFileCount] = React.useState("Loading files...");
-  const [status, setStatus] = React.useState("");
   const [showCreate, setShowCreate] = React.useState(false);
 
   React.useEffect(() => {
     const item = Office.context?.mailbox?.item;
     if (!item) {
       setFileCount("No mailbox context");
-      setStatus("Open this page from Outlook to view message attachments.");
       return;
     }
 
@@ -327,7 +320,6 @@ const MainPage: React.FC = () => {
     const atts: Office.AttachmentDetails[] = (item as Office.MessageRead).attachments || [];
     setAttachments(atts);
     setFileCount(formatFileCount(atts.length));
-    setStatus(atts.length > 0 ? "Ready" : "");
     setShowCreate(canCreate);
   }, []);
 
@@ -340,11 +332,9 @@ const MainPage: React.FC = () => {
     const fileType = getFileExtension(fileName);
     const editorUrl = `${window.location.origin}/editor.html`;
 
-    setStatus(`Opening ${fileName}...`);
-
     Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
       if (result.status !== Office.AsyncResultStatus.Succeeded) {
-        setStatus(`Error: ${result.error.message}`);
+        console.error(`Error opening editor: ${result.error.message}`);
         return;
       }
 
@@ -361,7 +351,7 @@ const MainPage: React.FC = () => {
               attachment.id,
               (contentResult) => {
                 if (contentResult.status !== Office.AsyncResultStatus.Succeeded) {
-                  setStatus(`Error: ${contentResult.error.message}`);
+                  console.error(`Error loading attachment: ${contentResult.error.message}`);
                   dialog.close();
                   return;
                 }
@@ -375,14 +365,11 @@ const MainPage: React.FC = () => {
                 );
               }
             );
-          } else if (message.type === "editor-opened") {
-            setStatus(`Opened ${fileName}.`);
           } else if (message.type === "editor-error") {
-            setStatus(`Error: ${message.message}`);
+            console.error(`Editor error: ${message.message}`);
             dialog.close();
           } else if (message.type === "close-editor-dialog") {
             dialog.close();
-            setStatus("Ready");
           }
         }
       );
@@ -390,9 +377,7 @@ const MainPage: React.FC = () => {
       dialog.addEventHandler(
         Office.EventType.DialogEventReceived,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (arg: any) => {
-          if (arg.error === 12006) setStatus("Ready");
-        }
+        (_arg: any) => {}
       );
     });
   }
@@ -402,7 +387,7 @@ const MainPage: React.FC = () => {
 
     Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
       if (result.status !== Office.AsyncResultStatus.Succeeded) {
-        setStatus(`Error: ${result.error.message}`);
+        console.error(`Error opening editor: ${result.error.message}`);
         return;
       }
 
@@ -437,9 +422,7 @@ const MainPage: React.FC = () => {
       dialog.addEventHandler(
         Office.EventType.DialogEventReceived,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (arg: any) => {
-          if (arg.error === 12006) setStatus("Ready");
-        }
+        (_arg: any) => {}
       );
     });
   }
@@ -536,11 +519,6 @@ const MainPage: React.FC = () => {
         )}
       </section>
 
-      {status && (
-        <p className={styles.status} aria-live="polite">
-          {status}
-        </p>
-      )}
     </div>
   );
 };
