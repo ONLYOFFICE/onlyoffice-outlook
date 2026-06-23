@@ -20,11 +20,10 @@ module.exports = async (env, options) => {
     entry: {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       react: ["react", "react-dom"],
-      taskpane: {
+      index: {
         import: ["./src/index.tsx", "./src/index.html"],
         dependOn: "react",
       },
-      commands: "./src/commands/commands.ts",
     },
     output: {
       clean: true,
@@ -62,9 +61,9 @@ module.exports = async (env, options) => {
     },
     plugins: [
       new HtmlWebpackPlugin({
-        filename: "taskpane.html",
+        filename: "index.html",
         template: "./src/index.html",
-        chunks: ["polyfill", "taskpane", "react"],
+        chunks: ["polyfill", "index", "react"],
       }),
       new CopyWebpackPlugin({
         patterns: [
@@ -84,11 +83,6 @@ module.exports = async (env, options) => {
             },
           },
         ],
-      }),
-      new HtmlWebpackPlugin({
-        filename: "commands.html",
-        template: "./src/commands/commands.html",
-        chunks: ["polyfill", "commands"],
       }),
       new webpack.ProvidePlugin({
         Promise: ["es6-promise", "Promise"],
