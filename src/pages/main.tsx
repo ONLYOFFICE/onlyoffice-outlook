@@ -420,51 +420,6 @@ const MainPage: React.FC = () => {
     });
   }
 
-  function openNewDocumentInEditor(docType: string) {
-    const editorUrl = `${window.location.origin}/editor.html?mode=create&fileType=${encodeURIComponent(docType)}&fileName=Document`;
-
-    Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
-      if (result.status !== Office.AsyncResultStatus.Succeeded) {
-        console.error(`Error opening editor: ${result.error.message}`);
-        return;
-      }
-
-      const dialog = result.value;
-
-      dialog.addEventHandler(
-        Office.EventType.DialogMessageReceived,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (arg: any) => {
-          const message = JSON.parse(arg.message);
-
-          if (message.type === "create-attachment") {
-            const proxyUrl = `/download-proxy?url=${encodeURIComponent(message.data.url)}`;
-            fetch(proxyUrl)
-              .then((r) => r.json())
-              .then(({ base64 }: { base64: string }) => {
-                (Office.context.mailbox.item as Office.MessageCompose).addFileAttachmentFromBase64Async(
-                  base64,
-                  `Document.${message.data.fileType}`,
-                  (asyncResult) => {
-                    if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
-                      console.error("Error adding attachment:", asyncResult.error.message);
-                    }
-                  }
-                );
-              })
-              .catch((err: Error) => console.error("Error loading file:", err));
-          }
-        }
-      );
-
-      dialog.addEventHandler(
-        Office.EventType.DialogEventReceived,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (_arg: any) => {}
-      );
-    });
-  }
-
   const senderInitial = from ? from.charAt(0).toUpperCase() : "M";
 
   return (
@@ -505,7 +460,7 @@ const MainPage: React.FC = () => {
                 key={doc.type}
                 className={styles.createBtn}
                 type="button"
-                onClick={() => openNewDocumentInEditor(doc.type)}
+                onClick={() => console.log("create")}
               >
                 <div
                   className={styles.createIconBox}
