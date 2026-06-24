@@ -41,6 +41,17 @@ export class FileUtils {
     return format?.actions.includes("edit") ?? false;
   }
 
+  async createKey(value: string) {
+    const buffer = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(value)
+    );
+
+    return Array.from(new Uint8Array(buffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
   createEditorConfig(
     key: string,
     fileName: string,

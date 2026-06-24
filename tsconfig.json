@@ -15,7 +15,7 @@
     "sourceMap": true,
     "target": "es5",
     "lib": [
-      "es7",
+      "es2017",
       "dom"
     ],
     "pretty": true,
