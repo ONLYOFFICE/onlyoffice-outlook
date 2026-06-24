@@ -312,8 +312,8 @@ const canEdit = (item: Office.Item) => {
 
 const MainPage: React.FC = () => {
   const styles = useStyles();
-    const [page, setPage] = React.useState<"main" | "settings">("main");
-  const fileUtils = React.useRef(new FileUtils([]));
+  const [page, setPage] = React.useState<"main" | "settings">("main");
+  const [fileUtils, setFileUtils] = React.useState<FileUtils>();
   const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[] | Office.AttachmentDetailsCompose[]>([]);
   const [subject, setSubject] = React.useState("Loading message...");
   const [from, setFrom] = React.useState("Unknown sender");
@@ -323,9 +323,11 @@ const MainPage: React.FC = () => {
 
   React.useEffect(() => {
     new DocumentServerClient().getFormats().then((formats) => {
-      fileUtils.current = new FileUtils(formats);
+      setFileUtils(new FileUtils(formats));
     });
+  }, []);
 
+  React.useEffect(() => {
     const item = Office.context?.mailbox?.item;
     if (!item) {
       setFileCount("No mailbox context");
@@ -387,12 +389,14 @@ const MainPage: React.FC = () => {
   }
 
   async function createEditorConfig(attachmentId: string, attachmentName: string, fileUrl: string, content: string | undefined = undefined) {
+    if (!fileUtils) throw new Error("FileUtils not initialized");
+
     const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY) || {};
     const documentServerUrl = (appSettings[DOCUMENT_SERVER_URL_SETTING] as string) || "";
     const documentServerJwtSecret = (appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] as string) || "";
 
     const mode = canEdit(Office.context.mailbox.item || {}) ? "edit" : "view";
-    const key = attachmentId ? await fileUtils.current.createKey(attachmentId) : crypto.randomUUID();
+    const key = attachmentId ? await fileUtils.createKey(attachmentId) : crypto.randomUUID();
     const user = {
       id: Office.context.mailbox.userProfile.emailAddress,
       name: Office.context.mailbox.userProfile.displayName,
@@ -401,7 +405,7 @@ const MainPage: React.FC = () => {
 
     return {
       documentServerUrl,
-      config: fileUtils.current.createEditorConfig(
+      config: fileUtils.createEditorConfig(
         key,
         attachmentName,
         fileUrl,
@@ -600,13 +604,13 @@ const MainPage: React.FC = () => {
       )}
 
       <section className={styles.fileList} aria-label="Files">
-        {attachments.length === 0 ? (
-          <p className={styles.fileEmpty}>No attachments in this message.</p>
-        ) : (
-          attachments.map((att) => {
-            const kind = getFileKind(att.name || "", fileUtils.current);
+        {!fileUtils ? null :(() => {
+          const viewable = attachments.filter((att) => fileUtils.isViewable(fileUtils.getExtension(att.name || "")));
+          if (viewable.length === 0) return <p className={styles.fileEmpty}>No attachments in this message.</p>;
+          return viewable.map((att) => {
+            const kind = getFileKind(att.name || "", fileUtils);
             const fileName = att.name || "Unnamed attachment";
-            const extension = fileUtils.current.getExtension(fileName);
+            const extension = fileUtils.getExtension(fileName);
             return (
               <article key={att.id} className={styles.fileItem}>
                 <div
@@ -623,7 +627,7 @@ const MainPage: React.FC = () => {
                   </p>
                 </div>
                 <div className={styles.fileActions}>
-                  {canEdit(Office.context.mailbox.item || {}) && fileUtils.current.isEditable(extension) && (
+                  {canEdit(Office.context.mailbox.item || {}) && fileUtils.isEditable(extension) && (
                     <Button
                       appearance="subtle"
                       size="small"
@@ -632,7 +636,7 @@ const MainPage: React.FC = () => {
                       aria-label="Edit"
                     />
                   )}
-                  {!(canEdit(Office.context.mailbox.item || {}) && fileUtils.current.isEditable(extension)) && (
+                  {!(canEdit(Office.context.mailbox.item || {}) && fileUtils.isEditable(extension)) && (
                   <Button
                     appearance="subtle"
                     size="small"
@@ -660,8 +664,8 @@ const MainPage: React.FC = () => {
                 </div>
               </article>
             );
-          })
-        )}
+          });
+        })()}
       </section>
 
     </div>

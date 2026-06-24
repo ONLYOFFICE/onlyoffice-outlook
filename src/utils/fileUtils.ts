@@ -35,6 +35,10 @@ export class FileUtils {
     return null;
   }
 
+  isViewable(extension: string): boolean {
+    return Boolean(this.getDocumentType(extension));
+  }
+
   isEditable(extension: string): boolean {
     const format = this.getDocFormatByExtension(extension);
 
