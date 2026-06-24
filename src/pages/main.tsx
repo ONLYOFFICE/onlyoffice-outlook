@@ -12,6 +12,10 @@ import {
   SlideLayoutRegular,
   DocumentPdfRegular,
   AttachRegular,
+  EditRegular,
+  EyeRegular,
+  ArrowDownloadRegular,
+  DeleteRegular,
 } from "@fluentui/react-icons";
 import SettingsPanel from "../components/SettingsPanel";
 import { FileUtils } from "../utils/fileUtils";
@@ -231,6 +235,12 @@ const useStyles = makeStyles({
     fontSize: "11px",
     color: tokens.colorNeutralForeground3,
   },
+  fileActions: {
+    display: "flex",
+    gap: "2px",
+    alignItems: "center",
+    flexShrink: "0",
+  },
   fileList: {
     display: "flex",
     flexDirection: "column",
@@ -288,13 +298,17 @@ const useStyles = makeStyles({
 
 // --- Main component ---
 
-const canEdit = (item: Office.Item) => {
-  const canCreate =
-      typeof (item as Office.MessageCompose).addFileAttachmentFromBase64Async === "function";
-  const canDelete = typeof (item as Office.MessageCompose).removeAttachmentAsync === "function";
-  
-  return canCreate && canDelete;
+const canCreate = (item: Office.Item) => {
+  return typeof (item as Office.MessageCompose).addFileAttachmentFromBase64Async === "function";
+};
+
+const canDelete = (item: Office.Item) => {
+  return typeof (item as Office.MessageCompose).removeAttachmentAsync === "function";
 }
+
+const canEdit = (item: Office.Item) => {
+  return canCreate(item) && canDelete(item);
+};
 
 const MainPage: React.FC = () => {
   const styles = useStyles();
@@ -490,6 +504,35 @@ const MainPage: React.FC = () => {
     });
   }
 
+  function downloadAttachment(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
+    if (!attachment.id) return;
+
+    (Office.context.mailbox.item as Office.MessageRead).getAttachmentContentAsync(
+      attachment.id,
+      (result: Office.AsyncResult<Office.AttachmentContent>) => {
+        if (result.status !== Office.AsyncResultStatus.Succeeded) return;
+        const link = document.createElement("a");
+        link.href = `data:application/octet-stream;base64,${result.value.content}`;
+        link.download = attachment.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    );
+  }
+
+  function deleteAttachment(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
+    if (!attachment.id) return;
+    (Office.context.mailbox.item as Office.MessageCompose).removeAttachmentAsync(
+      attachment.id,
+      (result) => {
+        if (result.status !== Office.AsyncResultStatus.Succeeded) {
+          console.error(`Error deleting attachment: ${result.error.message}`);
+        }
+      }
+    );
+  }
+
   function onCreateNew(type: string) {
     const attachment = {
       id: null,
@@ -578,13 +621,42 @@ const MainPage: React.FC = () => {
                     {kind.label} · {formatFileSize(att.size)}
                   </p>
                 </div>
-                <Button
-                  appearance="primary"
-                  size="small"
-                  onClick={() => openEditor(att)}
-                >
-                  View
-                </Button>
+                <div className={styles.fileActions}>
+                  {canEdit(Office.context.mailbox.item || {}) && (
+                    <Button
+                      appearance="subtle"
+                      size="small"
+                      icon={<EditRegular />}
+                      onClick={() => openEditor(att)}
+                      aria-label="Edit"
+                    />
+                  )}
+                  {!canEdit(Office.context.mailbox.item || {}) && (
+                  <Button
+                    appearance="subtle"
+                    size="small"
+                    icon={<EyeRegular />}
+                    onClick={() => openEditor(att)}
+                    aria-label="View"
+                  />
+                  )}
+                  <Button
+                    appearance="subtle"
+                    size="small"
+                    icon={<ArrowDownloadRegular />}
+                    onClick={() => downloadAttachment(att)}
+                    aria-label="Download"
+                  />
+                  {canDelete(Office.context.mailbox.item || {}) && (
+                    <Button
+                      appearance="subtle"
+                      size="small"
+                      icon={<DeleteRegular />}
+                      onClick={() => deleteAttachment(att)}
+                      aria-label="Delete"
+                    />
+                  )}
+                </div>
               </article>
             );
           })
