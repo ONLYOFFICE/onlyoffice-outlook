@@ -46,6 +46,10 @@ export class FileUtils {
     fileName: string,
     fileUrl: string,
     mode: "edit" | "view",
+    user: {
+      id: string,
+      name: string,
+    },
     secret: string,
     locale: string = "en",
   ) {
@@ -67,6 +71,7 @@ export class FileUtils {
         customization: {
           forcesave: true,
         },
+        user,
         lang: locale,
       },
       token: null as string | null,

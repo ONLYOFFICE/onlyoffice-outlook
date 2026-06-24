@@ -366,6 +366,12 @@ const MainPage: React.FC = () => {
                 const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "https://3998-3-125-222-163.ngrok-free.app" : "https://3998-3-125-222-163.ngrok-free.app";
                 const documentServerJwtSecret = appSettings ? appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] || "EPAvpORzhQ1lNB6PeTPWGD4MgX7w6MyJ" : "EPAvpORzhQ1lNB6PeTPWGD4MgX7w6MyJ";
 
+                const user = {
+                  id: Office.context.mailbox.userProfile.emailAddress,
+                  name: Office.context.mailbox.userProfile.displayName,
+                };
+                const locale = Office.context.displayLanguage;
+
                 dialog.messageChild(
                   JSON.stringify({
                     type: "response-config",
@@ -376,7 +382,9 @@ const MainPage: React.FC = () => {
                         attachment.name,
                         "_data_",
                         "view",
-                        documentServerJwtSecret
+                        user,
+                        documentServerJwtSecret,
+                        locale
                       ),
                       content: contentResult.value.content
                     },
