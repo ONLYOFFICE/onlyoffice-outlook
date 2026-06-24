@@ -290,7 +290,7 @@ const MainPage: React.FC = () => {
   const styles = useStyles();
     const [page, setPage] = React.useState<"main" | "settings">("main");
   const fileUtils = React.useRef(new FileUtils([]));
-  const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[]>([]);
+  const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[] | Office.AttachmentDetailsCompose[]>([]);
   const [subject, setSubject] = React.useState("Loading message...");
   const [from, setFrom] = React.useState("Unknown sender");
   const [date, setDate] = React.useState("");
@@ -331,17 +331,26 @@ const MainPage: React.FC = () => {
       setDate(formatMessageDate(readItem.dateTimeCreated));
     }
 
-    const atts: Office.AttachmentDetails[] = (item as Office.MessageRead).attachments || [];
-    setAttachments(atts);
-    setFileCount(formatFileCount(atts.length));
-    setShowCreate(canCreate);
+    if (isCompose) {
+      item.getAttachmentsAsync((result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          setAttachments(result.value);
+          setFileCount(formatFileCount(result.value.length));
+          setShowCreate(canCreate);
+        }
+      });
+    } else {
+      setAttachments((item as Office.MessageRead).attachments);
+      setFileCount(formatFileCount((item as Office.MessageRead).attachments.length));
+      setShowCreate(canCreate);
+    }
   }, []);
 
   if (page === "settings") {
     return <SettingsPanel onBack={() => setPage("main")} />;
   }
 
-  function openEditor(attachment: Office.AttachmentDetails) {
+  function openEditor(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
     const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY) || {};
     const editorUrl = `${window.location.origin}/index.html#editor`;
 
