@@ -83,6 +83,8 @@ interface DocType {
   Icon: React.ComponentType;
 }
 
+const ONLYOFFICE_BLANK_FILE_URL = "https://static.onlyoffice.com/assets/docs/samples/blank";
+
 const DOC_TYPES: DocType[] = [
   { type: "docx", label: "Document", ext: ".docx", color: "#185abd", Icon: DocumentRegular },
   { type: "xlsx", label: "Spreadsheet", ext: ".xlsx", color: "#107c41", Icon: TableRegular },
@@ -370,8 +372,36 @@ const MainPage: React.FC = () => {
     return <SettingsPanel onBack={() => setPage("main")} />;
   }
 
-  function openEditor(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
+  async function createEditorConfig(attachmentId: string, attachmentName: string, fileUrl: string, content: string | undefined = undefined) {
     const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY) || {};
+    const documentServerUrl = (appSettings[DOCUMENT_SERVER_URL_SETTING] as string) || "";
+    const documentServerJwtSecret = (appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] as string) || "";
+
+    const mode = canEdit(Office.context.mailbox.item || {}) ? "edit" : "view";
+    const key = attachmentId ? await fileUtils.current.createKey(attachmentId) : crypto.randomUUID();
+    const user = {
+      id: Office.context.mailbox.userProfile.emailAddress,
+      name: Office.context.mailbox.userProfile.displayName,
+    };
+    const locale = Office.context.displayLanguage;
+
+    return {
+      documentServerUrl,
+      config: fileUtils.current.createEditorConfig(
+        key,
+        attachmentName,
+        fileUrl,
+        mode,
+        user,
+        documentServerJwtSecret,
+        locale
+      ),
+      content,
+      attachmentId,
+    };
+  };
+
+  function openEditor(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
     const editorUrl = `${window.location.origin}/index.html#editor`;
 
     Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
@@ -385,51 +415,45 @@ const MainPage: React.FC = () => {
       dialog.addEventHandler(
         Office.EventType.DialogMessageReceived,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (arg: any) => {
+        async (arg: any) => {
           const message = JSON.parse(arg.message);
 
           if (message.type === "request-config") {
-            (Office.context.mailbox.item as Office.MessageRead).getAttachmentContentAsync(
-              attachment.id,
-              async (contentResult) => {
-                if (contentResult.status !== Office.AsyncResultStatus.Succeeded) {
-                  console.error(`Error loading attachment: ${contentResult.error.message}`);
-                  dialog.close();
-                  return;
-                }
+            if (attachment.id) {
+              (Office.context.mailbox.item as Office.MessageCompose).getAttachmentContentAsync(
+                attachment.id,
+                async (contentResult) => {
+                  if (contentResult.status !== Office.AsyncResultStatus.Succeeded) {
+                    console.error(`Error loading attachment: ${contentResult.error.message}`);
+                    dialog.close();
+                    return;
+                  }
 
-                const documentServerUrl = (appSettings[DOCUMENT_SERVER_URL_SETTING] as string) || "";
-                const documentServerJwtSecret = (appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] as string) || "";
-
-                const mode = canEdit(Office.context.mailbox.item || {}) ? "edit" : "view";
-                const key = await fileUtils.current.createKey(attachment.id);
-                const user = {
-                  id: Office.context.mailbox.userProfile.emailAddress,
-                  name: Office.context.mailbox.userProfile.displayName,
-                };
-                const locale = Office.context.displayLanguage;
-
-                dialog.messageChild(
-                  JSON.stringify({
-                    type: "response-config",
-                    data: {
-                      documentServerUrl,
-                      config: fileUtils.current.createEditorConfig(
-                        key,
+                  dialog.messageChild(
+                    JSON.stringify({
+                      type: "response-config",
+                      data: await createEditorConfig(
+                        attachment.id,
                         attachment.name,
                         "_data_",
-                        mode,
-                        user,
-                        documentServerJwtSecret,
-                        locale
+                        contentResult.value.content
                       ),
-                      content: contentResult.value.content,
-                      attachmentId: attachment.id,
-                    },
-                  })
-                );
-              }
-            );
+                    })
+                  );
+                }
+              );
+            } else {
+              dialog.messageChild(
+                JSON.stringify({
+                  type: "response-config",
+                  data: await createEditorConfig(
+                    attachment.id,
+                    attachment.name,
+                    ONLYOFFICE_BLANK_FILE_URL
+                  ),
+                })
+              );
+            }
           } else if (message.type === "request-save") {
             const proxyUrl = `${window.location.origin}/api/proxy?url=${encodeURIComponent(message.data.url)}`;
             (Office.context.mailbox.item as Office.MessageCompose).addFileAttachmentAsync(
@@ -461,6 +485,15 @@ const MainPage: React.FC = () => {
         (_arg: any) => {}
       );
     });
+  }
+
+  function onCreateNew(type: string) {
+    const attachment = {
+      id: null,
+      name: "Document." + type
+    } as unknown as Office.AttachmentDetails;
+
+    openEditor(attachment);
   }
 
   const senderInitial = from ? from.charAt(0).toUpperCase() : "M";
@@ -503,7 +536,7 @@ const MainPage: React.FC = () => {
                 key={doc.type}
                 className={styles.createBtn}
                 type="button"
-                onClick={() => console.log("create")}
+                onClick={() => onCreateNew(doc.type)}
               >
                 <div
                   className={styles.createIconBox}

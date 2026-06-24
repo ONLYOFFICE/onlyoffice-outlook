@@ -38,12 +38,12 @@ const EditorPage: React.FC = () => {
         const thisConfig = message.data.config;
         const thisAttacmentId = message.data.attachmentId;
         const content = message.data.content;
-        
+
         thisConfig.events = {
           onAppReady: () => {
             const editor = window.DocEditor?.instances[EDITOR_ID];
 
-            if (editor) {
+            if (editor && content && thisConfig.document.url === "_data_") {
               const body = base64ToUint8Array(content);
               //@ts-expect-error
               editor.openDocument(body);
@@ -52,7 +52,6 @@ const EditorPage: React.FC = () => {
           onSaveDocument: () => {
             const editor = window.DocEditor?.instances[EDITOR_ID];
 
-            console.log("onSaveDocument");
             if (editor) {
               editor.downloadAs();
             }
