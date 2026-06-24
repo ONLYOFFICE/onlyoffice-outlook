@@ -14,7 +14,7 @@ Office.onReady(() => {
   const initialPath = window.location.hash.replace("#", "/") || "/main";
 
   root?.render(
-    <FluentProvider theme={webLightTheme}>
+    <FluentProvider theme={webLightTheme} style={{ height: "100%" }}>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
           <Route path="/main" element={<MainPage />} />

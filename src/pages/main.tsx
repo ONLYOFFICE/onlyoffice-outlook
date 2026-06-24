@@ -363,8 +363,8 @@ const MainPage: React.FC = () => {
                   return;
                 }
 
-                const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "https://onlinedocs.docs.onlyoffice.com" : "https://onlinedocs.docs.onlyoffice.com";
-                const documentServerJwtSecret = appSettings ? appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] || "" : "";
+                const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "https://3998-3-125-222-163.ngrok-free.app" : "https://3998-3-125-222-163.ngrok-free.app";
+                const documentServerJwtSecret = appSettings ? appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] || "EPAvpORzhQ1lNB6PeTPWGD4MgX7w6MyJ" : "EPAvpORzhQ1lNB6PeTPWGD4MgX7w6MyJ";
 
                 dialog.messageChild(
                   JSON.stringify({
@@ -372,7 +372,7 @@ const MainPage: React.FC = () => {
                     data: {
                       documentServerUrl,
                       config: fileUtils.current.createEditorConfig(
-                        attachment.id,
+                        Date.now().toString(),
                         attachment.name,
                         "_data_",
                         "view",
