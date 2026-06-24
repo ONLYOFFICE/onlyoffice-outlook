@@ -40,6 +40,7 @@ const EditorPage: React.FC = () => {
   const styles = useStyles();
   const [documentServerUrl, setDocumentServerUrl] = React.useState();
   const [config, setConfig] = React.useState<Config | undefined>();
+  const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const attachmentId = React.useRef();
 
@@ -86,6 +87,7 @@ const EditorPage: React.FC = () => {
         setDocumentServerUrl(thisDocumentServerUrl);
         setConfig(thisConfig);
         attachmentId.current = thisAttacmentId;
+        setIsLoading(false);
       } else if (message.type === "response-save") {
         const editor = window.DocEditor?.instances[EDITOR_ID];
 
@@ -107,15 +109,17 @@ const EditorPage: React.FC = () => {
       <div className={isSaving ? styles.savingOverlay : styles.savingOverlayHidden}>
         <Spinner size="large" label="Saving..." labelPosition="below" />
       </div>
-      {documentServerUrl && config &&
-        <DocumentEditor
-            id={EDITOR_ID}
-            documentServerUrl={documentServerUrl}
-            config={config}
-            height="100%"
-            width="100%"
-          />
-        }
+      {isLoading
+        ? <Spinner size="large" label="Opening document..." labelPosition="below" />
+        : documentServerUrl && config &&
+          <DocumentEditor
+              id={EDITOR_ID}
+              documentServerUrl={documentServerUrl}
+              config={config}
+              height="100%"
+              width="100%"
+            />
+      }
     </div>
   );
 };
