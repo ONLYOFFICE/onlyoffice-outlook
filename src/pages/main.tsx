@@ -1,5 +1,10 @@
 import * as React from "react";
-import { makeStyles, shorthands, tokens, Button } from "@fluentui/react-components";
+import {
+  makeStyles,
+  shorthands,
+  tokens,
+  Button,
+} from "@fluentui/react-components";
 import {
   SettingsRegular,
   DocumentRegular,
@@ -8,6 +13,7 @@ import {
   DocumentPdfRegular,
   AttachRegular,
 } from "@fluentui/react-icons";
+import SettingsPanel from "../components/SettingsPanel";
 import { FileUtils } from "../utils/fileUtils";
 import { DocumentServerClient } from "../client/DocumentServerClient";
 import { APP_SETTINGS_KEY, DOCUMENT_SERVER_JWT_SECRET_SETTING, DOCUMENT_SERVER_URL_SETTING } from "../constants";
@@ -282,6 +288,7 @@ const useStyles = makeStyles({
 
 const MainPage: React.FC = () => {
   const styles = useStyles();
+    const [page, setPage] = React.useState<"main" | "settings">("main");
   const fileUtils = React.useRef(new FileUtils([]));
   const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[]>([]);
   const [subject, setSubject] = React.useState("Loading message...");
@@ -289,8 +296,6 @@ const MainPage: React.FC = () => {
   const [date, setDate] = React.useState("");
   const [fileCount, setFileCount] = React.useState("Loading files...");
   const [showCreate, setShowCreate] = React.useState(false);
-
-  const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY);
 
   React.useEffect(() => {
     new DocumentServerClient().getFormats().then((formats) => {
@@ -332,11 +337,12 @@ const MainPage: React.FC = () => {
     setShowCreate(canCreate);
   }, []);
 
-  function openSettings() {
-    window.location.href = "settings.html";
+  if (page === "settings") {
+    return <SettingsPanel onBack={() => setPage("main")} />;
   }
 
   function openEditor(attachment: Office.AttachmentDetails) {
+    const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY) || {};
     const editorUrl = `${window.location.origin}/index.html#editor`;
 
     Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
@@ -363,8 +369,8 @@ const MainPage: React.FC = () => {
                   return;
                 }
 
-                const documentServerUrl = appSettings ? appSettings[DOCUMENT_SERVER_URL_SETTING] || "https://3998-3-125-222-163.ngrok-free.app" : "https://3998-3-125-222-163.ngrok-free.app";
-                const documentServerJwtSecret = appSettings ? appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] || "EPAvpORzhQ1lNB6PeTPWGD4MgX7w6MyJ" : "EPAvpORzhQ1lNB6PeTPWGD4MgX7w6MyJ";
+                const documentServerUrl = (appSettings[DOCUMENT_SERVER_URL_SETTING] as string) || "";
+                const documentServerJwtSecret = (appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] as string) || "";
 
                 const key = await fileUtils.current.createKey(attachment.id);
                 const user = {
@@ -462,7 +468,7 @@ const MainPage: React.FC = () => {
         <Button
           appearance="subtle"
           icon={<SettingsRegular />}
-          onClick={openSettings}
+          onClick={() => {setPage("settings");}}
           aria-label="Settings"
         />
       </header>
