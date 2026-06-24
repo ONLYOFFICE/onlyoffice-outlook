@@ -339,20 +339,32 @@ const MainPage: React.FC = () => {
       setDate(formatMessageDate(readItem.dateTimeCreated));
     }
 
+    setShowCreate(canCreate);
+
     if (isCompose) {
-      item.getAttachmentsAsync((result) => {
+      (item as Office.MessageCompose).addHandlerAsync(Office.EventType.AttachmentsChanged, () => {
+        loadAttachments();
+      });
+    }
+
+    loadAttachments();
+  }, []);
+
+  const loadAttachments = () => {
+    const item = Office.context.mailbox.item;
+
+    if (typeof (item as Office.MessageCompose).getAttachmentsAsync === "function") {
+      (item as Office.MessageCompose).getAttachmentsAsync((result) => {
         if (result.status === Office.AsyncResultStatus.Succeeded) {
           setAttachments(result.value);
           setFileCount(formatFileCount(result.value.length));
-          setShowCreate(canCreate);
         }
       });
     } else {
       setAttachments((item as Office.MessageRead).attachments);
       setFileCount(formatFileCount((item as Office.MessageRead).attachments.length));
-      setShowCreate(canCreate);
     }
-  }, []);
+  };
 
   if (page === "settings") {
     return <SettingsPanel onBack={() => setPage("main")} />;
