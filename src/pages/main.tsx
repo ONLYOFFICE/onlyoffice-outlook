@@ -475,6 +475,9 @@ const MainPage: React.FC = () => {
                 }
               }
             );
+          } else if (message.type === "request-open-settings") {
+            dialog.close();
+            setPage("settings");
           }
         }
       );

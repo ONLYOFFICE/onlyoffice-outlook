@@ -1,4 +1,4 @@
-import { makeStyles, Spinner } from "@fluentui/react-components";
+import { makeStyles, Spinner, Text, Button } from "@fluentui/react-components";
 import { DocumentEditor } from "@onlyoffice/document-editor-react";
 import * as React from "react";
 
@@ -18,6 +18,27 @@ const useStyles = makeStyles({
     alignItems: "center",
     justifyContent: "center",
     textAlign: "center",
+  },
+  errorContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "12px",
+    padding: "32px",
+    maxWidth: "420px",
+  },
+  errorIcon: {
+    fontSize: "48px",
+    lineHeight: "1",
+    marginBottom: "8px",
+  },
+  errorTitle: {
+    fontWeight: "600",
+  },
+  errorDescription: {
+    color: "#605e5c",
+    lineHeight: "1.5",
   },
   savingOverlay: {
     position: "fixed",
@@ -42,6 +63,7 @@ const EditorPage: React.FC = () => {
   const [config, setConfig] = React.useState<Config | undefined>();
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [hasError, setHasError] = React.useState(false);
   const attachmentId = React.useRef();
 
   React.useEffect(() => {
@@ -104,6 +126,11 @@ const EditorPage: React.FC = () => {
     }));
   }, []);
 
+  const onLoadComponentError = () => {
+    setHasError(true);
+    setIsLoading(false);
+  };
+
   return (
     <div className={styles.root}>
       <div className={isSaving ? styles.savingOverlay : styles.savingOverlayHidden}>
@@ -111,14 +138,27 @@ const EditorPage: React.FC = () => {
       </div>
       {isLoading
         ? <Spinner size="large" label="Opening document..." labelPosition="below" />
-        : documentServerUrl && config &&
-          <DocumentEditor
-              id={EDITOR_ID}
-              documentServerUrl={documentServerUrl}
-              config={config}
-              height="100%"
-              width="100%"
-            />
+        : hasError
+          ? <div className={styles.errorContainer}>
+              <div className={styles.errorIcon}>⚠️</div>
+              <Text size={500} className={styles.errorTitle}>Document Server Unavailable</Text>
+              <Text size={300} className={styles.errorDescription}>
+                Unable to connect to ONLYOFFICE Document Server.
+                Please check your add-in settings and ensure the server address is correct and the server is running.
+              </Text>
+              <Button appearance="primary" onClick={() => Office.context.ui.messageParent(JSON.stringify({ type: "request-open-settings" }))}>
+                Open Settings
+              </Button>
+            </div>
+          : documentServerUrl && config &&
+            <DocumentEditor
+                id={EDITOR_ID}
+                documentServerUrl={documentServerUrl}
+                config={config}
+                height="100%"
+                width="100%"
+                onLoadComponentError={onLoadComponentError}
+              />
       }
     </div>
   );
