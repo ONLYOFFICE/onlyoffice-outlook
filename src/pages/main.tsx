@@ -606,6 +606,7 @@ const MainPage: React.FC = () => {
           attachments.map((att) => {
             const kind = getFileKind(att.name || "", fileUtils.current);
             const fileName = att.name || "Unnamed attachment";
+            const extension = fileUtils.current.getExtension(fileName);
             return (
               <article key={att.id} className={styles.fileItem}>
                 <div
@@ -622,7 +623,7 @@ const MainPage: React.FC = () => {
                   </p>
                 </div>
                 <div className={styles.fileActions}>
-                  {canEdit(Office.context.mailbox.item || {}) && (
+                  {canEdit(Office.context.mailbox.item || {}) && fileUtils.current.isEditable(extension) && (
                     <Button
                       appearance="subtle"
                       size="small"
@@ -631,7 +632,7 @@ const MainPage: React.FC = () => {
                       aria-label="Edit"
                     />
                   )}
-                  {!canEdit(Office.context.mailbox.item || {}) && (
+                  {!(canEdit(Office.context.mailbox.item || {}) && fileUtils.current.isEditable(extension)) && (
                   <Button
                     appearance="subtle"
                     size="small"
