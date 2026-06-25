@@ -51,9 +51,22 @@ const DOC_TYPE_ICONS: Record<string, string> = {
   diagram: "assets/diagram.svg",
 };
 
+function formatEmailAddress(details: Office.EmailAddressDetails | null | undefined): string {
+  if (!details) return "";
+  const { displayName, emailAddress } = details;
+  if (displayName && emailAddress && displayName !== emailAddress) {
+    return `${displayName}<${emailAddress}>`;
+  }
+  return emailAddress || displayName || "";
+}
+
 function getSenderLabel(item: Office.MessageRead): string {
-  if (!item.from) return "Unknown sender";
-  return item.from.emailAddress || item.from.displayName || "Unknown sender";
+  return formatEmailAddress(item.from) || "Unknown sender";
+}
+
+function getRecipientsLabel(recipients: Office.EmailAddressDetails[]): string {
+  if (!recipients || recipients.length === 0) return "";
+  return recipients.map(formatEmailAddress).filter(Boolean).join(", ");
 }
 
 function formatMessageDate(value: Date | undefined): string {
@@ -150,11 +163,17 @@ const useStyles = makeStyles({
   },
   meta: {
     display: "flex",
-    gap: "6px",
-    alignItems: "center",
+    flexDirection: "column",
+    gap: "4px",
     marginTop: "6px",
     color: tokens.colorNeutralForeground3,
     fontSize: "13px",
+    overflow: "hidden",
+  },
+  metaRow: {
+    display: "flex",
+    gap: "6px",
+    alignItems: "center",
     overflow: "hidden",
   },
   metaFrom: {
@@ -322,6 +341,7 @@ const MainPage: React.FC = () => {
   const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[] | Office.AttachmentDetailsCompose[]>([]);
   const [subject, setSubject] = React.useState("Loading message...");
   const [from, setFrom] = React.useState("Unknown sender");
+  const [to, setTo] = React.useState("");
   const [date, setDate] = React.useState("");
   const [fileCount, setFileCount] = React.useState("Loading files...");
   const [showCreate, setShowCreate] = React.useState(false);
@@ -358,11 +378,21 @@ const MainPage: React.FC = () => {
             : "(No subject)"
         );
       });
-      setFrom("Draft");
+      (item as Office.MessageCompose).from.getAsync((result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          setFrom(formatEmailAddress(result.value) || "Draft");
+        }
+      });
+      (item as Office.MessageCompose).to.getAsync((result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          setTo(getRecipientsLabel(result.value));
+        }
+      });
     } else {
       const readItem = item as Office.MessageRead;
       setSubject(readItem.subject || "(No subject)");
       setFrom(getSenderLabel(readItem));
+      setTo(getRecipientsLabel(readItem.to));
       setDate(formatMessageDate(readItem.dateTimeCreated));
     }
 
@@ -595,9 +625,17 @@ const MainPage: React.FC = () => {
         <div className={styles.messageContent}>
           <h2 className={styles.subject}>{subject}</h2>
           <div className={styles.meta}>
-            <span>From:</span>
-            <span className={styles.metaFrom}>{from}</span>
-            {date && <time className={styles.metaDate}>{date}</time>}
+            <div className={styles.metaRow}>
+              <span>From:</span>
+              <span className={styles.metaFrom}>{from}</span>
+              {date && <time className={styles.metaDate}>{date}</time>}
+            </div>
+            {to && (
+              <div className={styles.metaRow}>
+                <span>To:</span>
+                <span className={styles.metaFrom}>{to}</span>
+              </div>
+            )}
           </div>
         </div>
       </section>
