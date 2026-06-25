@@ -7,9 +7,6 @@ import {
 } from "@fluentui/react-components";
 import {
   SettingsRegular,
-  DocumentRegular,
-  TableRegular,
-  SlideLayoutRegular,
   EditRegular,
   EyeRegular,
   ArrowDownloadRegular,
@@ -73,16 +70,15 @@ function formatMessageDate(value: Date | undefined): string {
 interface DocType {
   type: string;
   label: string;
-  color: string;
-  Icon: React.ComponentType;
+  icon: string;
 }
 
 const ONLYOFFICE_BLANK_FILE_URL = "https://static.onlyoffice.com/assets/docs/samples/blank";
 
 const DOC_TYPES: DocType[] = [
-  { type: "docx", label: "Document", color: "#185abd", Icon: DocumentRegular },
-  { type: "xlsx", label: "Spreadsheet", color: "#107c41", Icon: TableRegular },
-  { type: "pptx", label: "Presentation", color: "#c43e1c", Icon: SlideLayoutRegular },
+  { type: "docx", label: "Document", icon: "assets/word.svg" },
+  { type: "xlsx", label: "Spreadsheet", icon: "assets/cell.svg" },
+  { type: "pptx", label: "Presentation", icon: "assets/slide.svg" },
 ];
 
 // --- Styles ---
@@ -213,9 +209,6 @@ const useStyles = makeStyles({
     justifyContent: "center",
     width: "36px",
     height: "36px",
-    borderRadius: "6px",
-    color: "#ffffff",
-    fontSize: "18px",
   },
   createLabel: {
     fontSize: "12px",
@@ -575,12 +568,8 @@ const MainPage: React.FC = () => {
                 type="button"
                 onClick={() => onCreateNew(doc.type)}
               >
-                <div
-                  className={styles.createIconBox}
-                  style={{ backgroundColor: doc.color }}
-                  aria-hidden="true"
-                >
-                  <doc.Icon />
+                <div className={styles.createIconBox} aria-hidden="true">
+                  <img src={doc.icon} width="32" height="32" alt="" />
                 </div>
                 <span className={styles.createLabel}>{doc.label}</span>
               </button>
