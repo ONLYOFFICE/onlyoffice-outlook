@@ -1,3 +1,5 @@
+/* global , crypto, TextEncoder */
+
 import sign from "jwt-encode";
 import type { DocFormat } from "../types";
 
@@ -14,9 +16,7 @@ export class FileUtils {
     return this.formats;
   }
 
-  getDocFormatByExtension(
-    extension: string,
-  ): DocFormat | undefined {
+  getDocFormatByExtension(extension: string): DocFormat | undefined {
     return this.formats.find((f) => extension === f.name);
   }
 
@@ -25,9 +25,7 @@ export class FileUtils {
     return fileName.split(".").pop()!.toLowerCase();
   }
 
-  getDocumentType(
-    extension: string,
-  ): string | null {
+  getDocumentType(extension: string): string | null {
     const format = this.getDocFormatByExtension(extension);
 
     if (format?.type) return format.type;
@@ -46,14 +44,11 @@ export class FileUtils {
   }
 
   async createKey(value: string) {
-    const buffer = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(value)
-    );
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
 
     return Array.from(new Uint8Array(buffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   createEditorConfig(
@@ -62,11 +57,11 @@ export class FileUtils {
     fileUrl: string,
     mode: "edit" | "view",
     user: {
-      id: string,
-      name: string,
+      id: string;
+      name: string;
     },
     secret: string,
-    locale: string = "en",
+    locale: string = "en"
   ) {
     const extension = this.getExtension(fileName);
 
