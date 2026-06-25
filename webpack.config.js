@@ -98,6 +98,26 @@ module.exports = async (env, options) => {
         options: env.WEBPACK_BUILD || options.https !== undefined ? options.https : await getHttpsOptions(),
       },
       port: process.env.npm_package_config_dev_server_port || 3000,
+      setupMiddlewares: (middlewares, devServer) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const https = require("https");
+
+        devServer.app.get("/api/proxy", (req, res) => {
+          const targetUrl = req.query.url;
+          if (!targetUrl) {
+            res.status(400).send("Missing url parameter");
+            return;
+          }
+          https.get(targetUrl, { rejectUnauthorized: false }, (proxyRes) => {
+            res.setHeader("Content-Type", proxyRes.headers["content-type"] || "application/octet-stream");
+            proxyRes.pipe(res);
+          }).on("error", (err) => {
+            res.status(500).send(err.message);
+          });
+        });
+
+        return middlewares;
+      },
     },
   };
 

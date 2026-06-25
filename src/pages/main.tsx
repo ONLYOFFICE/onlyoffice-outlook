@@ -286,6 +286,14 @@ const useStyles = makeStyles({
 
 // --- Main component ---
 
+const canEdit = (item: Office.Item) => {
+  const canCreate =
+      typeof (item as Office.MessageCompose).addFileAttachmentFromBase64Async === "function";
+  const canDelete = typeof (item as Office.MessageCompose).removeAttachmentAsync === "function";
+  
+  return canCreate && canDelete;
+}
+
 const MainPage: React.FC = () => {
   const styles = useStyles();
     const [page, setPage] = React.useState<"main" | "settings">("main");
@@ -381,6 +389,7 @@ const MainPage: React.FC = () => {
                 const documentServerUrl = (appSettings[DOCUMENT_SERVER_URL_SETTING] as string) || "";
                 const documentServerJwtSecret = (appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] as string) || "";
 
+                const mode = canEdit(Office.context.mailbox.item || {}) ? "edit" : "view";
                 const key = await fileUtils.current.createKey(attachment.id);
                 const user = {
                   id: Office.context.mailbox.userProfile.emailAddress,
@@ -397,15 +406,37 @@ const MainPage: React.FC = () => {
                         key,
                         attachment.name,
                         "_data_",
-                        "view",
+                        mode,
                         user,
                         documentServerJwtSecret,
                         locale
                       ),
-                      content: contentResult.value.content
+                      content: contentResult.value.content,
+                      attachmentId: attachment.id,
                     },
                   })
                 );
+              }
+            );
+          } else if (message.type === "request-save") {
+            const proxyUrl = `${window.location.origin}/api/proxy?url=${encodeURIComponent(message.data.url)}`;
+            (Office.context.mailbox.item as Office.MessageCompose).addFileAttachmentAsync(
+              proxyUrl,
+              message.data.name,
+              function (asyncResult) {
+                if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
+                  dialog.messageChild(JSON.stringify({
+                    type: "response-save",
+                    data: {
+                      attachmentId: asyncResult.value,
+                    }
+                  }));
+                  if (message.data.attachmentId) {
+                    (Office.context.mailbox.item as Office.MessageCompose).removeAttachmentAsync(message.data.attachmentId);
+                  }
+                } else {
+                  console.error("Error:", asyncResult.error.message);
+                }
               }
             );
           }
