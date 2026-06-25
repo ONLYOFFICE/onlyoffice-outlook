@@ -1,11 +1,27 @@
 {
   "name": "@onlyoffice/outlook",
   "version": "0.0.1",
+  "description": "ONLYOFFICE add-in for Outlook",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ONLYOFFICE/onlyoffice-outlook/issues",
+    "email": "support@onlyoffice.com"
+  },
+  "homepage": "https://github.com/ONLYOFFICE/onlyoffice-outlook#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/ONLYOFFICE/onlyoffice-outlook"
   },
-  "license": "Apache-2.0",
+  "author": "Ascensio System SIA <integration@onlyoffice.com> (https://www.onlyoffice.com)",
+  "maintainers": [
+    "Ascensio System SIA <integration@onlyoffice.com> (https://www.onlyoffice.com)"
+  ],
+  "keywords": [
+    "docs",
+    "office",
+    "outlook",
+    "onlyoffice"
+  ],
   "config": {
     "app_to_debug": "outlook",
     "app_type_to_debug": "desktop",
