@@ -5,7 +5,7 @@ import { MemoryRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainPage from "./pages/main";
 import EditorPage from "./pages/editor";
 
-/* global document, Office, module, require, HTMLElement */
+/* global document, window, Office, HTMLElement */
 
 const rootElement: HTMLElement | null = document.getElementById("container");
 const root = rootElement ? createRoot(rootElement) : undefined;
@@ -25,4 +25,3 @@ Office.onReady(() => {
     </FluentProvider>
   );
 });
-

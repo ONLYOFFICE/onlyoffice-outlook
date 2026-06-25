@@ -1,7 +1,11 @@
 import * as React from "react";
 import { makeStyles, tokens, Button, Field, Input } from "@fluentui/react-components";
 import { ArrowLeftRegular } from "@fluentui/react-icons";
-import { APP_SETTINGS_KEY, DOCUMENT_SERVER_JWT_SECRET_SETTING, DOCUMENT_SERVER_URL_SETTING } from "../constants";
+import {
+  APP_SETTINGS_KEY,
+  DOCUMENT_SERVER_JWT_SECRET_SETTING,
+  DOCUMENT_SERVER_URL_SETTING,
+} from "../constants";
 
 /* global Office */
 
@@ -81,7 +85,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   return (
     <div className={styles.root}>
       <header className={styles.header}>
-        <Button appearance="subtle" icon={<ArrowLeftRegular />} onClick={onBack} aria-label="Back" />
+        <Button
+          appearance="subtle"
+          icon={<ArrowLeftRegular />}
+          onClick={onBack}
+          aria-label="Back"
+        />
         <h1 className={styles.title}>Settings</h1>
       </header>
 
@@ -91,7 +100,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
             type="url"
             placeholder="https://your-docs-server.com"
             value={url}
-            onChange={(_e, data) => { setUrl(data.value); setStatus(null); }}
+            onChange={(_e, data) => {
+              setUrl(data.value);
+              setStatus(null);
+            }}
             autoComplete="off"
           />
         </Field>
@@ -101,7 +113,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
             type="password"
             placeholder=""
             value={secret}
-            onChange={(_e, data) => { setSecret(data.value); setStatus(null); }}
+            onChange={(_e, data) => {
+              setSecret(data.value);
+              setStatus(null);
+            }}
             autoComplete="off"
           />
         </Field>

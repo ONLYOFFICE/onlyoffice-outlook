@@ -2,21 +2,21 @@ import { makeStyles, Spinner, Text, Button } from "@fluentui/react-components";
 import { DocumentEditor } from "@onlyoffice/document-editor-react";
 import * as React from "react";
 
-import { Config } from '@onlyoffice/doceditor-types';
+import { Config } from "@onlyoffice/doceditor-types";
+
+/* global atob, btoa, Office, window */
 
 const base64ToUint8Array = (base64: string) => {
   const binary = atob(base64);
 
   return new Uint8Array(Array.from(binary, (char) => char.charCodeAt(0)));
-}
+};
 
 const uint8ArrayToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
-  const uint8Array = buffer instanceof Uint8Array 
-    ? buffer 
-    : new Uint8Array(buffer);
-    
-  return btoa(Array.from(uint8Array, (byte) => String.fromCharCode(byte)).join(''));
-}
+  const uint8Array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+
+  return btoa(Array.from(uint8Array, (byte) => String.fromCharCode(byte)).join(""));
+};
 
 const useStyles = makeStyles({
   root: {
@@ -75,57 +75,65 @@ const EditorPage: React.FC = () => {
   const attachmentId = React.useRef();
 
   React.useEffect(() => {
-    Office.context.ui.addHandlerAsync(Office.EventType.DialogParentMessageReceived, (arg) => {
-      const message = JSON.parse(arg.message);
+    Office.context.ui.addHandlerAsync(
+      Office.EventType.DialogParentMessageReceived,
+      (arg) => {
+        const message = JSON.parse(arg.message);
 
-      if (message.type === "response-config") {
-        const thisDocumentServerUrl = message.data.documentServerUrl;
-        const thisConfig = message.data.config;
-        const thisAttacmentId = message.data.attachmentId;
-        const content = message.data.content;
+        if (message.type === "response-config") {
+          const thisDocumentServerUrl = message.data.documentServerUrl;
+          const thisConfig = message.data.config;
+          const thisAttacmentId = message.data.attachmentId;
+          const content = message.data.content;
 
-        thisConfig.events = {
-          onAppReady: () => {
-            const editor = window.DocEditor?.instances[EDITOR_ID];
+          thisConfig.events = {
+            onAppReady: () => {
+              const editor = window.DocEditor?.instances[EDITOR_ID];
 
-            if (editor && content && thisConfig.document.url === "_data_") {
-              const body = base64ToUint8Array(content);
-              //@ts-expect-error
-              editor.openDocument(body);
-            }
-          },
-          onSaveDocument: (event: any) => {
-            setIsSaving(true);
-
-            Office.context.ui.messageParent(JSON.stringify({
-              type: "request-save",
-              data: {
-                attachmentId: attachmentId.current,
-                name: thisConfig.document?.title,
-                data: uint8ArrayToBase64(event.data),
+              if (editor && content && thisConfig.document.url === "_data_") {
+                const body = base64ToUint8Array(content);
+                //@ts-expect-error
+                editor.openDocument(body);
               }
-            }));
-          },
+            },
+            onSaveDocument: (event: any) => {
+              setIsSaving(true);
+
+              Office.context.ui.messageParent(
+                JSON.stringify({
+                  type: "request-save",
+                  data: {
+                    attachmentId: attachmentId.current,
+                    name: thisConfig.document?.title,
+                    data: uint8ArrayToBase64(event.data),
+                  },
+                })
+              );
+            },
+          };
+
+          setDocumentServerUrl(thisDocumentServerUrl);
+          setConfig(thisConfig);
+          attachmentId.current = thisAttacmentId;
+          setIsLoading(false);
+        } else if (message.type === "response-save") {
+          const editor = window.DocEditor?.instances[EDITOR_ID];
+
+          attachmentId.current = message.data.attachmentId;
+          setIsSaving(false);
+          if (editor) {
+            editor.showMessage("Document saved successfully.");
+          }
         }
+      },
+      () => {}
+    );
 
-        setDocumentServerUrl(thisDocumentServerUrl);
-        setConfig(thisConfig);
-        attachmentId.current = thisAttacmentId;
-        setIsLoading(false);
-      } else if (message.type === "response-save") {
-        const editor = window.DocEditor?.instances[EDITOR_ID];
-
-        attachmentId.current = message.data.attachmentId;
-        setIsSaving(false);
-        if (editor) {
-          editor.showMessage("Document saved successfully.");
-        }
-      }
-    }, () => {});
-
-    Office.context.ui.messageParent(JSON.stringify({
-      type: "request-config"
-    }));
+    Office.context.ui.messageParent(
+      JSON.stringify({
+        type: "request-config",
+      })
+    );
   }, []);
 
   const onLoadComponentError = () => {
@@ -138,30 +146,40 @@ const EditorPage: React.FC = () => {
       <div className={isSaving ? styles.savingOverlay : styles.savingOverlayHidden}>
         <Spinner size="large" label="Saving..." labelPosition="below" />
       </div>
-      {isLoading
-        ? <Spinner size="large" label="Opening document..." labelPosition="below" />
-        : hasError
-          ? <div className={styles.errorContainer}>
-              <div className={styles.errorIcon}>⚠️</div>
-              <Text size={500} className={styles.errorTitle}>Document Server Unavailable</Text>
-              <Text size={300} className={styles.errorDescription}>
-                Unable to connect to ONLYOFFICE Document Server.
-                Please check your add-in settings and ensure the server address is correct and the server is running.
-              </Text>
-              <Button appearance="primary" onClick={() => Office.context.ui.messageParent(JSON.stringify({ type: "request-open-settings" }))}>
-                Open Settings
-              </Button>
-            </div>
-          : documentServerUrl && config &&
-            <DocumentEditor
-                id={EDITOR_ID}
-                documentServerUrl={documentServerUrl}
-                config={config}
-                height="100%"
-                width="100%"
-                onLoadComponentError={onLoadComponentError}
-              />
-      }
+      {isLoading ? (
+        <Spinner size="large" label="Opening document..." labelPosition="below" />
+      ) : hasError ? (
+        <div className={styles.errorContainer}>
+          <div className={styles.errorIcon}>⚠️</div>
+          <Text size={500} className={styles.errorTitle}>
+            Document Server Unavailable
+          </Text>
+          <Text size={300} className={styles.errorDescription}>
+            Unable to connect to ONLYOFFICE Document Server. Please check your add-in settings and
+            ensure the server address is correct and the server is running.
+          </Text>
+          <Button
+            appearance="primary"
+            onClick={() =>
+              Office.context.ui.messageParent(JSON.stringify({ type: "request-open-settings" }))
+            }
+          >
+            Open Settings
+          </Button>
+        </div>
+      ) : (
+        documentServerUrl &&
+        config && (
+          <DocumentEditor
+            id={EDITOR_ID}
+            documentServerUrl={documentServerUrl}
+            config={config}
+            height="100%"
+            width="100%"
+            onLoadComponentError={onLoadComponentError}
+          />
+        )
+      )}
     </div>
   );
 };

@@ -19,9 +19,13 @@ import {
 import SettingsPanel from "../components/SettingsPanel";
 import { FileUtils } from "../utils/fileUtils";
 import { DocumentServerClient } from "../client/DocumentServerClient";
-import { APP_SETTINGS_KEY, DOCUMENT_SERVER_JWT_SECRET_SETTING, DOCUMENT_SERVER_URL_SETTING } from "../constants";
+import {
+  APP_SETTINGS_KEY,
+  DOCUMENT_SERVER_JWT_SECRET_SETTING,
+  DOCUMENT_SERVER_URL_SETTING,
+} from "../constants";
 
-/* global Office, window, fetch */
+/* global Office, window, crypto, console, document */
 
 // --- Utility functions ---
 
@@ -316,7 +320,7 @@ const canCreate = (item: Office.Item) => {
 
 const canDelete = (item: Office.Item) => {
   return typeof (item as Office.MessageCompose).removeAttachmentAsync === "function";
-}
+};
 
 const canEdit = (item: Office.Item) => {
   return canCreate(item) && canDelete(item);
@@ -326,7 +330,9 @@ const MainPage: React.FC = () => {
   const styles = useStyles();
   const [page, setPage] = React.useState<"main" | "settings">("main");
   const [fileUtils, setFileUtils] = React.useState<FileUtils>();
-  const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[] | Office.AttachmentDetailsCompose[]>([]);
+  const [attachments, setAttachments] = React.useState<
+    Office.AttachmentDetails[] | Office.AttachmentDetailsCompose[]
+  >([]);
   const [subject, setSubject] = React.useState("Loading message...");
   const [from, setFrom] = React.useState("Unknown sender");
   const [senderDisplayName, setSenderDisplayName] = React.useState("Unknown sender");
@@ -382,7 +388,9 @@ const MainPage: React.FC = () => {
       const readItem = item as Office.MessageRead;
       setSubject(readItem.subject || "(No subject)");
       setFrom(getSenderLabel(readItem));
-      setSenderDisplayName(readItem.from?.displayName || readItem.from?.emailAddress || "Unknown sender");
+      setSenderDisplayName(
+        readItem.from?.displayName || readItem.from?.emailAddress || "Unknown sender"
+      );
       setTo(getRecipientsLabel(readItem.to));
       setDate(formatMessageDate(readItem.dateTimeCreated));
     }
@@ -418,12 +426,18 @@ const MainPage: React.FC = () => {
     return <SettingsPanel onBack={() => setPage("main")} />;
   }
 
-  async function createEditorConfig(attachmentId: string, attachmentName: string, fileUrl: string, content: string | undefined = undefined) {
+  async function createEditorConfig(
+    attachmentId: string,
+    attachmentName: string,
+    fileUrl: string,
+    content: string | undefined = undefined
+  ) {
     if (!fileUtils) throw new Error("FileUtils not initialized");
 
     const appSettings = Office.context.roamingSettings.get(APP_SETTINGS_KEY) || {};
     const documentServerUrl = (appSettings[DOCUMENT_SERVER_URL_SETTING] as string) || "";
-    const documentServerJwtSecret = (appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] as string) || "";
+    const documentServerJwtSecret =
+      (appSettings[DOCUMENT_SERVER_JWT_SECRET_SETTING] as string) || "";
 
     const mode = canEdit(Office.context.mailbox.item || {}) ? "edit" : "view";
     const key = attachmentId ? await fileUtils.createKey(attachmentId) : crypto.randomUUID();
@@ -447,7 +461,7 @@ const MainPage: React.FC = () => {
       content,
       attachmentId,
     };
-  };
+  }
 
   function openEditor(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
     const editorUrl = `${window.location.origin}/index.html#editor`;
@@ -462,7 +476,7 @@ const MainPage: React.FC = () => {
 
       dialog.addEventHandler(
         Office.EventType.DialogMessageReceived,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         async (arg: any) => {
           const message = JSON.parse(arg.message);
 
@@ -508,14 +522,18 @@ const MainPage: React.FC = () => {
               message.data.name,
               function (asyncResult) {
                 if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
-                  dialog.messageChild(JSON.stringify({
-                    type: "response-save",
-                    data: {
-                      attachmentId: asyncResult.value,
-                    }
-                  }));
+                  dialog.messageChild(
+                    JSON.stringify({
+                      type: "response-save",
+                      data: {
+                        attachmentId: asyncResult.value,
+                      },
+                    })
+                  );
                   if (message.data.attachmentId) {
-                    (Office.context.mailbox.item as Office.MessageCompose).removeAttachmentAsync(message.data.attachmentId);
+                    (Office.context.mailbox.item as Office.MessageCompose).removeAttachmentAsync(
+                      message.data.attachmentId
+                    );
                   }
                 } else {
                   console.error("Error:", asyncResult.error.message);
@@ -528,16 +546,12 @@ const MainPage: React.FC = () => {
           }
         }
       );
-
-      dialog.addEventHandler(
-        Office.EventType.DialogEventReceived,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (_arg: any) => {}
-      );
     });
   }
 
-  function downloadAttachment(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
+  function downloadAttachment(
+    attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose
+  ) {
     if (!attachment.id) return;
 
     setDownloading((prev) => new Set(prev).add(attachment.id));
@@ -545,7 +559,11 @@ const MainPage: React.FC = () => {
     (Office.context.mailbox.item as Office.MessageRead).getAttachmentContentAsync(
       attachment.id,
       (result: Office.AsyncResult<Office.AttachmentContent>) => {
-        setDownloading((prev) => { const next = new Set(prev); next.delete(attachment.id); return next; });
+        setDownloading((prev) => {
+          const next = new Set(prev);
+          next.delete(attachment.id);
+          return next;
+        });
         if (result.status !== Office.AsyncResultStatus.Succeeded) return;
         const link = document.createElement("a");
         link.href = `data:application/octet-stream;base64,${result.value.content}`;
@@ -557,7 +575,9 @@ const MainPage: React.FC = () => {
     );
   }
 
-  function deleteAttachment(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
+  function deleteAttachment(
+    attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose
+  ) {
     if (!attachment.id) return;
 
     setDeleting((prev) => new Set(prev).add(attachment.id));
@@ -565,7 +585,11 @@ const MainPage: React.FC = () => {
     (Office.context.mailbox.item as Office.MessageCompose).removeAttachmentAsync(
       attachment.id,
       (result) => {
-        setDeleting((prev) => { const next = new Set(prev); next.delete(attachment.id); return next; });
+        setDeleting((prev) => {
+          const next = new Set(prev);
+          next.delete(attachment.id);
+          return next;
+        });
         if (result.status !== Office.AsyncResultStatus.Succeeded) {
           console.error(`Error deleting attachment: ${result.error.message}`);
         }
@@ -576,7 +600,7 @@ const MainPage: React.FC = () => {
   function onCreateNew(type: string, name: string) {
     const attachment = {
       id: null,
-      name: name + "." + type
+      name: name + "." + type,
     } as unknown as Office.AttachmentDetails;
 
     openEditor(attachment);
@@ -601,7 +625,9 @@ const MainPage: React.FC = () => {
         <Button
           appearance="subtle"
           icon={<SettingsRegular />}
-          onClick={() => {setPage("settings");}}
+          onClick={() => {
+            setPage("settings");
+          }}
           aria-label="Settings"
         />
       </header>
@@ -652,7 +678,9 @@ const MainPage: React.FC = () => {
               <Field label="File name">
                 <Input
                   autoFocus
-                  placeholder={DOC_TYPES.find((d) => d.type === pendingCreateType)?.label ?? "Document"}
+                  placeholder={
+                    DOC_TYPES.find((d) => d.type === pendingCreateType)?.label ?? "Document"
+                  }
                   value={pendingCreateName}
                   onChange={(_, data) => setPendingCreateName(data.value)}
                   onKeyDown={(e) => {
@@ -662,7 +690,11 @@ const MainPage: React.FC = () => {
                       setPendingCreateName("");
                     }
                   }}
-                  contentAfter={<span style={{ color: "var(--colorNeutralForeground3)", fontSize: "12px" }}>.{pendingCreateType}</span>}
+                  contentAfter={
+                    <span style={{ color: "var(--colorNeutralForeground3)", fontSize: "12px" }}>
+                      .{pendingCreateType}
+                    </span>
+                  }
                 />
               </Field>
               <div className={styles.createFormActions}>
@@ -676,11 +708,7 @@ const MainPage: React.FC = () => {
                 >
                   Cancel
                 </Button>
-                <Button
-                  appearance="primary"
-                  size="small"
-                  onClick={submitCreateForm}
-                >
+                <Button appearance="primary" size="small" onClick={submitCreateForm}>
                   Create
                 </Button>
               </div>
@@ -690,76 +718,87 @@ const MainPage: React.FC = () => {
       )}
 
       <section className={styles.fileList} aria-label="Files">
-        {!fileUtils ? null :(() => {
-          const viewable = attachments.filter((att) => fileUtils.isViewable(fileUtils.getExtension(att.name || "")));
-          if (viewable.length === 0) return <p className={styles.fileEmpty}>No attachments in this message.</p>;
-          return viewable.map((att) => {
-            const fileName = att.name || "Unnamed attachment";
-            const extension = fileUtils.getExtension(fileName);
-            const docType = fileUtils.getDocumentType(extension) || "";
-            const iconSrc = DOC_TYPE_ICONS[docType];
-            const label = DOC_TYPE_LABELS[docType] || "File";
-            return (
-              <article key={att.id} className={styles.fileItem}>
-                <div className={styles.fileIconBox} aria-hidden="true">
-                  {iconSrc && <img src={iconSrc} width="32" height="32" alt="" />}
-                </div>
-                <div className={styles.fileContent}>
-                  <h2 className={styles.fileName}>{fileName}</h2>
-                  <p className={styles.fileMeta}>
-                    {label} · {formatFileSize(att.size)}
-                  </p>
-                </div>
-                <div className={styles.fileActions}>
-                  {canEdit(Office.context.mailbox.item || {}) && fileUtils.isEditable(extension) && (
-                    <Button
-                      appearance="subtle"
-                      size="small"
-                      icon={<EditRegular />}
-                      onClick={() => openEditor(att)}
-                      aria-label="Edit"
-                    />
-                  )}
-                  {!(canEdit(Office.context.mailbox.item || {}) && fileUtils.isEditable(extension)) && (
-                  <Button
-                    appearance="subtle"
-                    size="small"
-                    icon={<EyeRegular />}
-                    onClick={() => openEditor(att)}
-                    aria-label="View"
-                  />
-                  )}
-                  {downloading.has(att.id) ? (
-                    <div className={styles.actionSpinner}><Spinner size="extra-tiny" /></div>
-                  ) : (
-                    <Button
-                      appearance="subtle"
-                      size="small"
-                      icon={<ArrowDownloadRegular />}
-                      onClick={() => downloadAttachment(att)}
-                      aria-label="Download"
-                    />
-                  )}
-                  {canDelete(Office.context.mailbox.item || {}) && (
-                    deleting.has(att.id) ? (
-                      <div className={styles.actionSpinner}><Spinner size="extra-tiny" /></div>
-                    ) : (
-                      <Button
-                        appearance="subtle"
-                        size="small"
-                        icon={<DeleteRegular />}
-                        onClick={() => deleteAttachment(att)}
-                        aria-label="Delete"
-                      />
-                    )
-                  )}
-                </div>
-              </article>
-            );
-          });
-        })()}
+        {!fileUtils
+          ? null
+          : (() => {
+              const viewable = attachments.filter((att) =>
+                fileUtils.isViewable(fileUtils.getExtension(att.name || ""))
+              );
+              if (viewable.length === 0)
+                return <p className={styles.fileEmpty}>No attachments in this message.</p>;
+              return viewable.map((att) => {
+                const fileName = att.name || "Unnamed attachment";
+                const extension = fileUtils.getExtension(fileName);
+                const docType = fileUtils.getDocumentType(extension) || "";
+                const iconSrc = DOC_TYPE_ICONS[docType];
+                const label = DOC_TYPE_LABELS[docType] || "File";
+                return (
+                  <article key={att.id} className={styles.fileItem}>
+                    <div className={styles.fileIconBox} aria-hidden="true">
+                      {iconSrc && <img src={iconSrc} width="32" height="32" alt="" />}
+                    </div>
+                    <div className={styles.fileContent}>
+                      <h2 className={styles.fileName}>{fileName}</h2>
+                      <p className={styles.fileMeta}>
+                        {label} · {formatFileSize(att.size)}
+                      </p>
+                    </div>
+                    <div className={styles.fileActions}>
+                      {canEdit(Office.context.mailbox.item || {}) &&
+                        fileUtils.isEditable(extension) && (
+                          <Button
+                            appearance="subtle"
+                            size="small"
+                            icon={<EditRegular />}
+                            onClick={() => openEditor(att)}
+                            aria-label="Edit"
+                          />
+                        )}
+                      {!(
+                        canEdit(Office.context.mailbox.item || {}) &&
+                        fileUtils.isEditable(extension)
+                      ) && (
+                        <Button
+                          appearance="subtle"
+                          size="small"
+                          icon={<EyeRegular />}
+                          onClick={() => openEditor(att)}
+                          aria-label="View"
+                        />
+                      )}
+                      {downloading.has(att.id) ? (
+                        <div className={styles.actionSpinner}>
+                          <Spinner size="extra-tiny" />
+                        </div>
+                      ) : (
+                        <Button
+                          appearance="subtle"
+                          size="small"
+                          icon={<ArrowDownloadRegular />}
+                          onClick={() => downloadAttachment(att)}
+                          aria-label="Download"
+                        />
+                      )}
+                      {canDelete(Office.context.mailbox.item || {}) &&
+                        (deleting.has(att.id) ? (
+                          <div className={styles.actionSpinner}>
+                            <Spinner size="extra-tiny" />
+                          </div>
+                        ) : (
+                          <Button
+                            appearance="subtle"
+                            size="small"
+                            icon={<DeleteRegular />}
+                            onClick={() => deleteAttachment(att)}
+                            aria-label="Delete"
+                          />
+                        ))}
+                    </div>
+                  </article>
+                );
+              });
+            })()}
       </section>
-
     </div>
   );
 };
