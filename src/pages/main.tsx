@@ -102,9 +102,10 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     gap: "16px",
-    minHeight: "100vh",
+    height: "100vh",
     padding: "20px",
     boxSizing: "border-box",
+    overflow: "hidden",
   },
   header: {
     display: "flex",
@@ -245,6 +246,9 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     gap: "8px",
+    flex: "1",
+    overflowY: "auto",
+    minHeight: "0",
   },
   fileEmpty: {
     margin: "0",
