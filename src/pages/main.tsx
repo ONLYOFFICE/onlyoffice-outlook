@@ -7,6 +7,7 @@ import {
   Spinner,
   Field,
   Input,
+  Avatar,
 } from "@fluentui/react-components";
 import {
   SettingsRegular,
@@ -134,19 +135,6 @@ const useStyles = makeStyles({
     padding: "14px 0",
     borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-  },
-  avatar: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "44px",
-    height: "44px",
-    borderRadius: "50%",
-    backgroundColor: tokens.colorBrandBackground,
-    color: tokens.colorNeutralForegroundInverted,
-    fontSize: "20px",
-    fontWeight: "600",
-    flexShrink: "0",
   },
   messageContent: {
     minWidth: "0",
@@ -341,6 +329,7 @@ const MainPage: React.FC = () => {
   const [attachments, setAttachments] = React.useState<Office.AttachmentDetails[] | Office.AttachmentDetailsCompose[]>([]);
   const [subject, setSubject] = React.useState("Loading message...");
   const [from, setFrom] = React.useState("Unknown sender");
+  const [senderDisplayName, setSenderDisplayName] = React.useState("Unknown sender");
   const [to, setTo] = React.useState("");
   const [date, setDate] = React.useState("");
   const [fileCount, setFileCount] = React.useState("Loading files...");
@@ -381,6 +370,7 @@ const MainPage: React.FC = () => {
       (item as Office.MessageCompose).from.getAsync((result) => {
         if (result.status === Office.AsyncResultStatus.Succeeded) {
           setFrom(formatEmailAddress(result.value) || "Draft");
+          setSenderDisplayName(result.value?.displayName || result.value?.emailAddress || "Draft");
         }
       });
       (item as Office.MessageCompose).to.getAsync((result) => {
@@ -392,6 +382,7 @@ const MainPage: React.FC = () => {
       const readItem = item as Office.MessageRead;
       setSubject(readItem.subject || "(No subject)");
       setFrom(getSenderLabel(readItem));
+      setSenderDisplayName(readItem.from?.displayName || readItem.from?.emailAddress || "Unknown sender");
       setTo(getRecipientsLabel(readItem.to));
       setDate(formatMessageDate(readItem.dateTimeCreated));
     }
@@ -601,8 +592,6 @@ const MainPage: React.FC = () => {
     onCreateNew(pendingCreateType, name);
   }
 
-  const senderInitial = from ? from.charAt(0).toUpperCase() : "M";
-
   return (
     <div className={styles.root}>
       <header className={styles.header}>
@@ -619,9 +608,7 @@ const MainPage: React.FC = () => {
       </header>
 
       <section className={styles.messageInfo} aria-label="Message details">
-        <div className={styles.avatar} aria-hidden="true">
-          {senderInitial}
-        </div>
+        <Avatar color="colorful" name={senderDisplayName} size={40} aria-hidden="true" />
         <div className={styles.messageContent}>
           <h2 className={styles.subject}>{subject}</h2>
           <div className={styles.meta}>
