@@ -10,8 +10,6 @@ import {
   DocumentRegular,
   TableRegular,
   SlideLayoutRegular,
-  DocumentPdfRegular,
-  AttachRegular,
   EditRegular,
   EyeRegular,
   ArrowDownloadRegular,
@@ -37,28 +35,21 @@ function formatFileSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-interface FileKind {
-  label: string;
-  color: string;
-  Icon: React.ComponentType;
-}
+const DOC_TYPE_LABELS: Record<string, string> = {
+  word: "Document",
+  cell: "Spreadsheet",
+  slide: "Presentation",
+  pdf: "PDF",
+  diagram: "Diagram",
+};
 
-function getFileKind(fileName: string, fu: FileUtils): FileKind {
-  const ext = fu.getExtension(fileName);
-  if (["xls", "xlsx", "csv"].includes(ext)) {
-    return { label: "Spreadsheet", color: "#107c41", Icon: TableRegular };
-  }
-  if (["doc", "docx", "txt", "rtf"].includes(ext)) {
-    return { label: "Document", color: "#185abd", Icon: DocumentRegular };
-  }
-  if (ext === "pdf") {
-    return { label: "PDF", color: "#c4312b", Icon: DocumentPdfRegular };
-  }
-  if (["ppt", "pptx"].includes(ext)) {
-    return { label: "Presentation", color: "#c43e1c", Icon: SlideLayoutRegular };
-  }
-  return { label: "File", color: "#616161", Icon: AttachRegular };
-}
+const DOC_TYPE_ICONS: Record<string, string> = {
+  word: "assets/word.svg",
+  cell: "assets/cell.svg",
+  slide: "assets/slide.svg",
+  pdf: "assets/pdf.svg",
+  diagram: "assets/diagram.svg",
+};
 
 function getSenderLabel(item: Office.MessageRead): string {
   if (!item.from) return "Unknown sender";
@@ -275,9 +266,6 @@ const useStyles = makeStyles({
     justifyContent: "center",
     width: "32px",
     height: "32px",
-    borderRadius: "4px",
-    color: "#ffffff",
-    fontSize: "16px",
     flexShrink: "0",
   },
   fileContent: {
@@ -612,22 +600,20 @@ const MainPage: React.FC = () => {
           const viewable = attachments.filter((att) => fileUtils.isViewable(fileUtils.getExtension(att.name || "")));
           if (viewable.length === 0) return <p className={styles.fileEmpty}>No attachments in this message.</p>;
           return viewable.map((att) => {
-            const kind = getFileKind(att.name || "", fileUtils);
             const fileName = att.name || "Unnamed attachment";
             const extension = fileUtils.getExtension(fileName);
+            const docType = fileUtils.getDocumentType(extension) || "";
+            const iconSrc = DOC_TYPE_ICONS[docType];
+            const label = DOC_TYPE_LABELS[docType] || "File";
             return (
               <article key={att.id} className={styles.fileItem}>
-                <div
-                  className={styles.fileIconBox}
-                  style={{ backgroundColor: kind.color }}
-                  aria-hidden="true"
-                >
-                  <kind.Icon />
+                <div className={styles.fileIconBox} aria-hidden="true">
+                  {iconSrc && <img src={iconSrc} width="32" height="32" alt="" />}
                 </div>
                 <div className={styles.fileContent}>
                   <h2 className={styles.fileName}>{fileName}</h2>
                   <p className={styles.fileMeta}>
-                    {kind.label} · {formatFileSize(att.size)}
+                    {label} · {formatFileSize(att.size)}
                   </p>
                 </div>
                 <div className={styles.fileActions}>
