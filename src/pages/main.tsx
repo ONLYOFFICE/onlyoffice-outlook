@@ -73,7 +73,6 @@ function formatMessageDate(value: Date | undefined): string {
 interface DocType {
   type: string;
   label: string;
-  ext: string;
   color: string;
   Icon: React.ComponentType;
 }
@@ -81,9 +80,9 @@ interface DocType {
 const ONLYOFFICE_BLANK_FILE_URL = "https://static.onlyoffice.com/assets/docs/samples/blank";
 
 const DOC_TYPES: DocType[] = [
-  { type: "docx", label: "Document", ext: ".docx", color: "#185abd", Icon: DocumentRegular },
-  { type: "xlsx", label: "Spreadsheet", ext: ".xlsx", color: "#107c41", Icon: TableRegular },
-  { type: "pptx", label: "Presentation", ext: ".pptx", color: "#c43e1c", Icon: SlideLayoutRegular },
+  { type: "docx", label: "Document", color: "#185abd", Icon: DocumentRegular },
+  { type: "xlsx", label: "Spreadsheet", color: "#107c41", Icon: TableRegular },
+  { type: "pptx", label: "Presentation", color: "#c43e1c", Icon: SlideLayoutRegular },
 ];
 
 // --- Styles ---
@@ -222,10 +221,6 @@ const useStyles = makeStyles({
     fontSize: "12px",
     fontWeight: "600",
     lineHeight: "1.2",
-  },
-  createExt: {
-    fontSize: "11px",
-    color: tokens.colorNeutralForeground3,
   },
   fileActions: {
     display: "flex",
@@ -588,7 +583,6 @@ const MainPage: React.FC = () => {
                   <doc.Icon />
                 </div>
                 <span className={styles.createLabel}>{doc.label}</span>
-                <span className={styles.createExt}>{doc.ext}</span>
               </button>
             ))}
           </div>
