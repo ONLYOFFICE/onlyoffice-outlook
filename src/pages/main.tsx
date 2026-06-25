@@ -5,6 +5,8 @@ import {
   tokens,
   Button,
   Spinner,
+  Field,
+  Input,
 } from "@fluentui/react-components";
 import {
   SettingsRegular,
@@ -180,6 +182,21 @@ const useStyles = makeStyles({
     gridTemplateColumns: "repeat(3, 1fr)",
     gap: "8px",
   },
+  createForm: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginTop: "12px",
+    padding: "12px",
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: "6px",
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
+  createFormActions: {
+    display: "flex",
+    gap: "8px",
+    justifyContent: "flex-end",
+  },
   createBtn: {
     display: "flex",
     flexDirection: "column",
@@ -310,6 +327,8 @@ const MainPage: React.FC = () => {
   const [showCreate, setShowCreate] = React.useState(false);
   const [downloading, setDownloading] = React.useState<Set<string>>(new Set());
   const [deleting, setDeleting] = React.useState<Set<string>>(new Set());
+  const [pendingCreateType, setPendingCreateType] = React.useState<string | null>(null);
+  const [pendingCreateName, setPendingCreateName] = React.useState("");
 
   React.useEffect(() => {
     new DocumentServerClient().getFormats().then((formats) => {
@@ -534,13 +553,22 @@ const MainPage: React.FC = () => {
     );
   }
 
-  function onCreateNew(type: string) {
+  function onCreateNew(type: string, name: string) {
     const attachment = {
       id: null,
-      name: "Document." + type
+      name: name + "." + type
     } as unknown as Office.AttachmentDetails;
 
     openEditor(attachment);
+  }
+
+  function submitCreateForm() {
+    if (!pendingCreateType) return;
+    const defaultLabel = DOC_TYPES.find((d) => d.type === pendingCreateType)?.label ?? "Document";
+    const name = pendingCreateName.trim() || defaultLabel;
+    setPendingCreateType(null);
+    setPendingCreateName("");
+    onCreateNew(pendingCreateType, name);
   }
 
   const senderInitial = from ? from.charAt(0).toUpperCase() : "M";
@@ -583,7 +611,10 @@ const MainPage: React.FC = () => {
                 key={doc.type}
                 className={styles.createBtn}
                 type="button"
-                onClick={() => onCreateNew(doc.type)}
+                onClick={() => {
+                  setPendingCreateType(doc.type);
+                  setPendingCreateName("");
+                }}
               >
                 <div className={styles.createIconBox} aria-hidden="true">
                   <img src={doc.icon} width="32" height="32" alt="" />
@@ -592,6 +623,45 @@ const MainPage: React.FC = () => {
               </button>
             ))}
           </div>
+          {pendingCreateType && (
+            <div className={styles.createForm}>
+              <Field label="File name">
+                <Input
+                  autoFocus
+                  placeholder={DOC_TYPES.find((d) => d.type === pendingCreateType)?.label ?? "Document"}
+                  value={pendingCreateName}
+                  onChange={(_, data) => setPendingCreateName(data.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitCreateForm();
+                    if (e.key === "Escape") {
+                      setPendingCreateType(null);
+                      setPendingCreateName("");
+                    }
+                  }}
+                  contentAfter={<span style={{ color: "var(--colorNeutralForeground3)", fontSize: "12px" }}>.{pendingCreateType}</span>}
+                />
+              </Field>
+              <div className={styles.createFormActions}>
+                <Button
+                  appearance="secondary"
+                  size="small"
+                  onClick={() => {
+                    setPendingCreateType(null);
+                    setPendingCreateName("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  appearance="primary"
+                  size="small"
+                  onClick={submitCreateForm}
+                >
+                  Create
+                </Button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
