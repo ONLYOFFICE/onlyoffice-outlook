@@ -1,11 +1,11 @@
 {
-  "name": "office-addin-taskpane-react",
+  "name": "@onlyoffice/outlook",
   "version": "0.0.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OfficeDev/Office-Addin-TaskPane-React.git"
+    "url": "https://github.com/ONLYOFFICE/onlyoffice-outlook"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "config": {
     "app_to_debug": "outlook",
     "app_type_to_debug": "desktop",
