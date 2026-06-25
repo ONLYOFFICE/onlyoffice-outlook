@@ -4,6 +4,7 @@ import {
   shorthands,
   tokens,
   Button,
+  Spinner,
 } from "@fluentui/react-components";
 import {
   SettingsRegular,
@@ -221,6 +222,13 @@ const useStyles = makeStyles({
     alignItems: "center",
     flexShrink: "0",
   },
+  actionSpinner: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "28px",
+    height: "28px",
+  },
   fileList: {
     display: "flex",
     flexDirection: "column",
@@ -300,6 +308,8 @@ const MainPage: React.FC = () => {
   const [date, setDate] = React.useState("");
   const [fileCount, setFileCount] = React.useState("Loading files...");
   const [showCreate, setShowCreate] = React.useState(false);
+  const [downloading, setDownloading] = React.useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     new DocumentServerClient().getFormats().then((formats) => {
@@ -491,9 +501,12 @@ const MainPage: React.FC = () => {
   function downloadAttachment(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
     if (!attachment.id) return;
 
+    setDownloading((prev) => new Set(prev).add(attachment.id));
+
     (Office.context.mailbox.item as Office.MessageRead).getAttachmentContentAsync(
       attachment.id,
       (result: Office.AsyncResult<Office.AttachmentContent>) => {
+        setDownloading((prev) => { const next = new Set(prev); next.delete(attachment.id); return next; });
         if (result.status !== Office.AsyncResultStatus.Succeeded) return;
         const link = document.createElement("a");
         link.href = `data:application/octet-stream;base64,${result.value.content}`;
@@ -507,9 +520,13 @@ const MainPage: React.FC = () => {
 
   function deleteAttachment(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
     if (!attachment.id) return;
+
+    setDeleting((prev) => new Set(prev).add(attachment.id));
+
     (Office.context.mailbox.item as Office.MessageCompose).removeAttachmentAsync(
       attachment.id,
       (result) => {
+        setDeleting((prev) => { const next = new Set(prev); next.delete(attachment.id); return next; });
         if (result.status !== Office.AsyncResultStatus.Succeeded) {
           console.error(`Error deleting attachment: ${result.error.message}`);
         }
@@ -618,21 +635,29 @@ const MainPage: React.FC = () => {
                     aria-label="View"
                   />
                   )}
-                  <Button
-                    appearance="subtle"
-                    size="small"
-                    icon={<ArrowDownloadRegular />}
-                    onClick={() => downloadAttachment(att)}
-                    aria-label="Download"
-                  />
-                  {canDelete(Office.context.mailbox.item || {}) && (
+                  {downloading.has(att.id) ? (
+                    <div className={styles.actionSpinner}><Spinner size="extra-tiny" /></div>
+                  ) : (
                     <Button
                       appearance="subtle"
                       size="small"
-                      icon={<DeleteRegular />}
-                      onClick={() => deleteAttachment(att)}
-                      aria-label="Delete"
+                      icon={<ArrowDownloadRegular />}
+                      onClick={() => downloadAttachment(att)}
+                      aria-label="Download"
                     />
+                  )}
+                  {canDelete(Office.context.mailbox.item || {}) && (
+                    deleting.has(att.id) ? (
+                      <div className={styles.actionSpinner}><Spinner size="extra-tiny" /></div>
+                    ) : (
+                      <Button
+                        appearance="subtle"
+                        size="small"
+                        icon={<DeleteRegular />}
+                        onClick={() => deleteAttachment(att)}
+                        aria-label="Delete"
+                      />
+                    )
                   )}
                 </div>
               </article>
