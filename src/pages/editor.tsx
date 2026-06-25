@@ -10,6 +10,14 @@ const base64ToUint8Array = (base64: string) => {
   return new Uint8Array(Array.from(binary, (char) => char.charCodeAt(0)));
 }
 
+const uint8ArrayToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
+  const uint8Array = buffer instanceof Uint8Array 
+    ? buffer 
+    : new Uint8Array(buffer);
+    
+  return btoa(Array.from(uint8Array, (byte) => String.fromCharCode(byte)).join(''));
+}
+
 const useStyles = makeStyles({
   root: {
     height: "100%",
@@ -86,21 +94,15 @@ const EditorPage: React.FC = () => {
               editor.openDocument(body);
             }
           },
-          onSaveDocument: () => {
+          onSaveDocument: (event: any) => {
             setIsSaving(true);
-            const editor = window.DocEditor?.instances[EDITOR_ID];
 
-            if (editor) {
-              editor.downloadAs();
-            }
-          },
-          onDownloadAs: (event: { data: { url: string } }) => {
             Office.context.ui.messageParent(JSON.stringify({
               type: "request-save",
               data: {
                 attachmentId: attachmentId.current,
                 name: thisConfig.document?.title,
-                url: event.data.url,
+                data: uint8ArrayToBase64(event.data),
               }
             }));
           },

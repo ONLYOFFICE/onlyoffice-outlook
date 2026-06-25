@@ -503,9 +503,8 @@ const MainPage: React.FC = () => {
               );
             }
           } else if (message.type === "request-save") {
-            const proxyUrl = `${window.location.origin}/api/proxy?url=${encodeURIComponent(message.data.url)}`;
-            (Office.context.mailbox.item as Office.MessageCompose).addFileAttachmentAsync(
-              proxyUrl,
+            (Office.context.mailbox.item as Office.MessageCompose).addFileAttachmentFromBase64Async(
+              message.data.data,
               message.data.name,
               function (asyncResult) {
                 if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
