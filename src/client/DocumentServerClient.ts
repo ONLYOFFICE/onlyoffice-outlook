@@ -17,7 +17,7 @@
  */
 
 import type { DocFormat } from "../types";
-import formats from "../../assets/onlyoffice-docs-formats.json";
+import formats from "../../assets/document-formats/onlyoffice-docs-formats.json";
 
 export class DocumentServerClient {
   async getFormats(): Promise<DocFormat[]> {
