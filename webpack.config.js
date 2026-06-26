@@ -72,6 +72,10 @@ module.exports = async (env, options) => {
             to: "assets/[name][ext][query]",
           },
           {
+            from: "assets/document-formats/onlyoffice-docs-formats.json",
+            to: "assets/document-formats/[name][ext]",
+          },
+          {
             from: "manifest*.xml",
             to: "[name]" + "[ext]",
             transform(content) {
