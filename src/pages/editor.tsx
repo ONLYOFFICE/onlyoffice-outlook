@@ -186,11 +186,10 @@ const EditorPage: React.FC = () => {
           </Button>
         </div>
       ) : (
-        documentServerUrl &&
         config && (
           <DocumentEditor
             id={EDITOR_ID}
-            documentServerUrl={documentServerUrl}
+            documentServerUrl={documentServerUrl || ""}
             config={config}
             height="100%"
             width="100%"
