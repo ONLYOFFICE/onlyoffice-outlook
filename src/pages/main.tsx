@@ -482,7 +482,7 @@ const MainPage: React.FC = () => {
   }
 
   function openEditor(attachment: Office.AttachmentDetails | Office.AttachmentDetailsCompose) {
-    const editorUrl = `${window.location.origin}/index.html#editor`;
+    const editorUrl = `${window.location.origin}${window.location.pathname}#editor`;
 
     Office.context.ui.displayDialogAsync(editorUrl, { height: 80, width: 80 }, (result) => {
       if (result.status !== Office.AsyncResultStatus.Succeeded) {
